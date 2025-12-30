@@ -110,3 +110,46 @@ async def test_upload(image: UploadFile = File(...)):
         return {"result": result}
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
+@app.get("/projects")
+def get_projects():
+    try:
+        response = supabase.table("projects").select("*").order("id", desc=True).execute()
+
+        if response.data is None:
+            raise HTTPException(status_code=500, detail="Failed to fetch projects")
+
+        return {"data": response.data}
+
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
+# --------------------------------------------------
+# Delete project by ID
+# --------------------------------------------------
+@app.delete("/projects/{project_id}")
+def delete_project(project_id: str):
+    try:
+        # 1. Get project
+        response = supabase.table("projects").select("*").eq("id", project_id).single().execute()
+
+        if not response.data:
+            raise HTTPException(status_code=404, detail="Project not found")
+
+        project = response.data
+        image_urls = project.get("image_urls", [])
+
+        # 2. Delete images from Cloudinary
+        for url in image_urls:
+            # Extract public_id safely
+            # Example: https://res.cloudinary.com/xxx/image/upload/v123/projects/abc.jpg
+            public_id = url.split("/upload/")[1].rsplit(".", 1)[0]
+            cloudinary.uploader.destroy(public_id)
+
+        # 3. Delete row from Supabase
+        supabase.table("projects").delete().eq("id", project_id).execute()
+
+        return {"message": "Project and images deleted successfully"}
+
+    except HTTPException:
+        raise
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
