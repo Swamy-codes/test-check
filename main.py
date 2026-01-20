@@ -153,3 +153,71 @@ def delete_project(project_id: str):
         raise
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
+@app.post("/gold")
+async def create_gold_item(
+    name: str = Form(...),
+    type: str = Form(...),
+    purity: str = Form(...),
+    weight_gm: float = Form(...),
+    gender: str = Form(...),
+    image: UploadFile = File(...)
+):
+    try:
+        upload_result = cloudinary.uploader.upload(
+            image.file,
+            folder="gold_collection"
+        )
+
+        data = {
+            "name": name,
+            "type": type,
+            "purity": purity,
+            "weight_gm": weight_gm,
+            "gender": gender,
+            "image_url": upload_result["secure_url"]
+        }
+
+        res = supabase.table("gold_collection").insert(data).execute()
+
+        return {
+            "status": "success",
+            "data": res.data
+        }
+
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
+
+# --------------------------------------------------
+# GET: All Gold Items
+# --------------------------------------------------
+@app.get("/gold")
+def get_all_gold_items():
+    try:
+        res = (
+            supabase
+            .table("gold_collection")
+            .select("*")
+            .order("created_at", desc=True)
+            .execute()
+        )
+
+        return {
+            "count": len(res.data),
+            "data": res.data
+        }
+
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
+
+# --------------------------------------------------
+# DELETE: Remove Gold Item
+# --------------------------------------------------
+@app.delete("/gold/{gold_id}")
+def delete_gold_item(gold_id: int):
+    try:
+        supabase.table("gold_collection").delete().eq("id", gold_id).execute()
+        return {"status": "deleted", "id": gold_id}
+
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
+
