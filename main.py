@@ -157,6 +157,7 @@ def delete_project(project_id: str):
 async def create_gold_item(
     name: str = Form(...),
     type: str = Form(...),
+    goldtype: str = Form(...),  # NEW FIELD
     purity: str = Form(...),
     weight_gm: float = Form(...),
     gender: str = Form(...),
@@ -171,6 +172,7 @@ async def create_gold_item(
         data = {
             "name": name,
             "type": type,
+            "goldtype": goldtype,  # ADD HERE
             "purity": purity,
             "weight_gm": weight_gm,
             "gender": gender,
@@ -186,7 +188,6 @@ async def create_gold_item(
 
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
-
 # --------------------------------------------------
 # GET: All Gold Items
 # --------------------------------------------------
