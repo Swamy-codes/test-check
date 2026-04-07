@@ -157,26 +157,30 @@ def delete_project(project_id: str):
 async def create_gold_item(
     name: str = Form(...),
     type: str = Form(...),
-    goldtype: str = Form(...),  # NEW FIELD
+    goldtype: str = Form(...),
     purity: str = Form(...),
     weight_gm: float = Form(...),
     gender: str = Form(...),
-    image: UploadFile = File(...)
+    images: List[UploadFile] = File(...)   # 👈 multiple files
 ):
     try:
-        upload_result = cloudinary.uploader.upload(
-            image.file,
-            folder="gold_collection"
-        )
+        image_urls = []
+
+        for image in images:
+            upload_result = cloudinary.uploader.upload(
+                image.file,
+                folder="gold_collection"
+            )
+            image_urls.append(upload_result["secure_url"])
 
         data = {
             "name": name,
             "type": type,
-            "goldtype": goldtype,  # ADD HERE
+            "goldtype": goldtype,
             "purity": purity,
             "weight_gm": weight_gm,
             "gender": gender,
-            "image_url": upload_result["secure_url"]
+            "image_urls": image_urls   # 👈 store list
         }
 
         res = supabase.table("gold_collection").insert(data).execute()
