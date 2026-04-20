@@ -161,7 +161,8 @@ async def create_gold_item(
     purity: str = Form(...),
     weight_gm: float = Form(...),
     gender: str = Form(...),
-    images: List[UploadFile] = File(...)   # 👈 multiple files
+    images: List[UploadFile] = File(...),   # 👈 multiple files
+    description: str = Form(...)
 ):
     try:
         image_urls = []
@@ -180,7 +181,8 @@ async def create_gold_item(
             "purity": purity,
             "weight_gm": weight_gm,
             "gender": gender,
-            "image_urls": image_urls   # 👈 store list
+            "image_urls": image_urls,   # 👈 store list
+            "description": description
         }
 
         res = supabase.table("gold_collection").insert(data).execute()
