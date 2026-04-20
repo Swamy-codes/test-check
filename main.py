@@ -161,8 +161,9 @@ async def create_gold_item(
     purity: str = Form(...),
     weight_gm: float = Form(...),
     gender: str = Form(...),
-    images: List[UploadFile] = File(...),   # 👈 multiple files
-    description: str = Form(...)
+     description: str = Form(...),
+    images: List[UploadFile] = File(...)  # 👈 multiple files
+   
 ):
     try:
         image_urls = []
