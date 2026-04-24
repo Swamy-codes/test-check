@@ -229,3 +229,62 @@ def delete_gold_item(gold_id: int):
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
 
+@app.put("/gold/{gold_id}")
+async def update_gold_item(
+    gold_id: int,
+    name: Optional[str] = Form(None),
+    type: Optional[str] = Form(None),
+    goldtype: Optional[str] = Form(None),
+    purity: Optional[str] = Form(None),
+    weight_gm: Optional[float] = Form(None),
+    gender: Optional[str] = Form(None),
+    description: Optional[str] = Form(None),
+    images: Optional[List[UploadFile]] = File(None)  # optional images
+):
+    try:
+        update_data = {}
+
+        # Add only provided fields
+        if name:
+            update_data["name"] = name
+        if type:
+            update_data["type"] = type
+        if goldtype:
+            update_data["goldtype"] = goldtype
+        if purity:
+            update_data["purity"] = purity
+        if weight_gm is not None:
+            update_data["weight_gm"] = weight_gm
+        if gender:
+            update_data["gender"] = gender
+        if description:
+            update_data["description"] = description
+
+        # Handle images if provided
+        if images:
+            image_urls = []
+            for image in images:
+                upload_result = cloudinary.uploader.upload(
+                    image.file,
+                    folder="gold_collection"
+                )
+                image_urls.append(upload_result["secure_url"])
+
+            update_data["image_urls"] = image_urls
+
+        # Update in DB
+        res = (
+            supabase
+            .table("gold_collection")
+            .update(update_data)
+            .eq("id", gold_id)
+            .execute()
+        )
+
+        return {
+            "status": "updated",
+            "data": res.data
+        }
+
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
