@@ -6,7 +6,7 @@ from fastapi.middleware.cors import CORSMiddleware
 from supabase import create_client, Client
 import cloudinary
 import cloudinary.uploader
-
+from typing import List, Optional
 # --------------------------------------------------
 # Load .env locally
 # --------------------------------------------------
