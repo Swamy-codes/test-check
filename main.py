@@ -286,3 +286,43 @@ async def update_gold_item(
 
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
+@app.post("/poster")
+async def create_poster(
+    details: str = Form(...),
+    image: UploadFile = File(...)
+):
+    try:
+        # Upload image to Cloudinary
+        image.file.seek(0)
+        result = cloudinary.uploader.upload(
+            image.file,
+            folder="poster"  # separate folder for posters
+        )
+        image_url = result.get("secure_url")
+        if not image_url:
+            raise HTTPException(status_code=500, detail="Failed to upload image to Cloudinary")
+
+        # Insert into Supabase
+        data = {"details": details, "image_url": image_url}
+        res = supabase.table("poster").insert(data).execute()
+
+        if not res.data:
+            raise HTTPException(status_code=500, detail="Failed to insert poster into Supabase")
+
+        return {"status": "success", "data": res.data}
+
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
+
+
+# --------------------------------------------------
+# Get All Posters
+# --------------------------------------------------
+@app.get("/poster")
+def get_posters():
+    try:
+        res = supabase.table("poster").select("*").order("created_at", desc=True).execute()
+        return {"count": len(res.data), "data": res.data}
+
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
