@@ -161,13 +161,13 @@ async def create_gold_item(
     purity: str = Form(...),
     weight_gm: float = Form(...),
     gender: str = Form(...),
-     description: str = Form(...),
-    images: List[UploadFile] = File(...)  # 👈 multiple files
-   
+    description: str = Form(...),
+    height: str = Form(...),  # new field
+    width: str = Form(...),   # new field
+    images: List[UploadFile] = File(...)  # multiple files
 ):
     try:
         image_urls = []
-
         for image in images:
             upload_result = cloudinary.uploader.upload(
                 image.file,
@@ -182,8 +182,10 @@ async def create_gold_item(
             "purity": purity,
             "weight_gm": weight_gm,
             "gender": gender,
-            "image_urls": image_urls,   # 👈 store list
-            "description": description
+            "description": description,
+            "height": height,    # store new field
+            "width": width,      # store new field
+            "image_urls": image_urls
         }
 
         res = supabase.table("gold_collection").insert(data).execute()
@@ -239,12 +241,13 @@ async def update_gold_item(
     weight_gm: Optional[float] = Form(None),
     gender: Optional[str] = Form(None),
     description: Optional[str] = Form(None),
+    height: Optional[str] = Form(None),  # new optional field
+    width: Optional[str] = Form(None),   # new optional field
     images: Optional[List[UploadFile]] = File(None)  # optional images
 ):
     try:
         update_data = {}
 
-        # Add only provided fields
         if name:
             update_data["name"] = name
         if type:
@@ -259,8 +262,11 @@ async def update_gold_item(
             update_data["gender"] = gender
         if description:
             update_data["description"] = description
+        if height:
+            update_data["height"] = height
+        if width:
+            update_data["width"] = width
 
-        # Handle images if provided
         if images:
             image_urls = []
             for image in images:
@@ -269,17 +275,9 @@ async def update_gold_item(
                     folder="gold_collection"
                 )
                 image_urls.append(upload_result["secure_url"])
-
             update_data["image_urls"] = image_urls
 
-        # Update in DB
-        res = (
-            supabase
-            .table("gold_collection")
-            .update(update_data)
-            .eq("id", gold_id)
-            .execute()
-        )
+        res = supabase.table("gold_collection").update(update_data).eq("id", gold_id).execute()
 
         return {
             "status": "updated",
