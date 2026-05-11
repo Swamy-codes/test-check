@@ -321,7 +321,7 @@ async def create_poster(
 @app.get("/poster")
 def get_posters():
     try:
-        res = supabase.table("poster").select("*").order("created_at", desc=True).execute()
+        res = supabase.table("poster").select("*").order("id", desc=True).execute()
         return {"count": len(res.data), "data": res.data}
 
     except Exception as e:
