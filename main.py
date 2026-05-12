@@ -286,71 +286,121 @@ async def update_gold_item(
 
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
+# --------------------------------------------------
+# CREATE: Add Poster
+# --------------------------------------------------
 @app.post("/poster")
 async def create_poster(
     details: str = Form(...),
+    type: str = Form(...),   # NEW COLUMN
     image: UploadFile = File(...)
 ):
     try:
         # Upload image to Cloudinary
         image.file.seek(0)
+
         result = cloudinary.uploader.upload(
             image.file,
-            folder="poster"  # separate folder for posters
+            folder="poster"
         )
+
         image_url = result.get("secure_url")
+
         if not image_url:
-            raise HTTPException(status_code=500, detail="Failed to upload image to Cloudinary")
+            raise HTTPException(
+                status_code=500,
+                detail="Failed to upload image to Cloudinary"
+            )
 
         # Insert into Supabase
-        data = {"details": details, "image_url": image_url}
+        data = {
+            "details": details,
+            "type": type,          # NEW COLUMN
+            "image_url": image_url
+        }
+
         res = supabase.table("poster").insert(data).execute()
 
         if not res.data:
-            raise HTTPException(status_code=500, detail="Failed to insert poster into Supabase")
+            raise HTTPException(
+                status_code=500,
+                detail="Failed to insert poster into Supabase"
+            )
 
-        return {"status": "success", "data": res.data}
+        return {
+            "status": "success",
+            "data": res.data
+        }
 
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
 
 
 # --------------------------------------------------
-# Get All Posters
+# GET: All Posters
 # --------------------------------------------------
 @app.get("/poster")
 def get_posters():
     try:
-        res = supabase.table("poster").select("*").order("id", desc=True).execute()
-        return {"count": len(res.data), "data": res.data}
+        res = (
+            supabase
+            .table("poster")
+            .select("*")
+            .order("id", desc=True)
+            .execute()
+        )
+
+        return {
+            "count": len(res.data),
+            "data": res.data
+        }
 
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
+
+
+# --------------------------------------------------
+# DELETE: Poster
+# --------------------------------------------------
 @app.delete("/poster/{poster_id}")
 def delete_poster(poster_id: int):
     try:
-        # 1. Fetch the poster
-        res = supabase.table("poster").select("*").eq("id", poster_id).single().execute()
+        # Fetch poster
+        res = (
+            supabase
+            .table("poster")
+            .select("*")
+            .eq("id", poster_id)
+            .single()
+            .execute()
+        )
+
         poster = res.data
 
         if not poster:
-            raise HTTPException(status_code=404, detail="Poster not found")
+            raise HTTPException(
+                status_code=404,
+                detail="Poster not found"
+            )
 
-        # 2. Delete image from Cloudinary
+        # Delete image from Cloudinary
         image_url = poster.get("image_url")
+
         if image_url:
-            # Extract public_id safely
-            # Example: https://res.cloudinary.com/xxx/image/upload/v123/poster/abc.jpg
             public_id = image_url.split("/upload/")[1].rsplit(".", 1)[0]
             cloudinary.uploader.destroy(public_id)
 
-        # 3. Delete row from Supabase
+        # Delete row from Supabase
         supabase.table("poster").delete().eq("id", poster_id).execute()
 
-        return {"status": "deleted", "id": poster_id}
+        return {
+            "status": "deleted",
+            "id": poster_id
+        }
 
     except HTTPException:
         raise
+
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
 
@@ -362,48 +412,87 @@ def delete_poster(poster_id: int):
 async def update_poster(
     poster_id: int,
     details: str = Form(None),
+    type: str = Form(None),   # NEW COLUMN
     image: UploadFile = File(None)
 ):
     try:
         update_data = {}
 
-        # Update details if provided
+        # Update details
         if details:
             update_data["details"] = details
 
-        # Update image if provided
-        if image:
-            # Fetch old poster to delete old image
-            res = supabase.table("poster").select("*").eq("id", poster_id).single().execute()
-            poster = res.data
-            if not poster:
-                raise HTTPException(status_code=404, detail="Poster not found")
+        # Update type
+        if type:
+            update_data["type"] = type
 
+        # Update image
+        if image:
+            # Fetch old poster
+            res = (
+                supabase
+                .table("poster")
+                .select("*")
+                .eq("id", poster_id)
+                .single()
+                .execute()
+            )
+
+            poster = res.data
+
+            if not poster:
+                raise HTTPException(
+                    status_code=404,
+                    detail="Poster not found"
+                )
+
+            # Delete old image
             old_image_url = poster.get("image_url")
+
             if old_image_url:
                 public_id = old_image_url.split("/upload/")[1].rsplit(".", 1)[0]
                 cloudinary.uploader.destroy(public_id)
 
             # Upload new image
             image.file.seek(0)
+
             result = cloudinary.uploader.upload(
                 image.file,
                 folder="poster"
             )
+
             new_image_url = result.get("secure_url")
+
             if not new_image_url:
-                raise HTTPException(status_code=500, detail="Failed to upload new image to Cloudinary")
+                raise HTTPException(
+                    status_code=500,
+                    detail="Failed to upload new image"
+                )
+
             update_data["image_url"] = new_image_url
 
         if not update_data:
-            raise HTTPException(status_code=400, detail="No fields to update")
+            raise HTTPException(
+                status_code=400,
+                detail="No fields to update"
+            )
 
-        # Update in Supabase
-        res = supabase.table("poster").update(update_data).eq("id", poster_id).execute()
+        # Update Supabase
+        res = (
+            supabase
+            .table("poster")
+            .update(update_data)
+            .eq("id", poster_id)
+            .execute()
+        )
 
-        return {"status": "updated", "data": res.data}
+        return {
+            "status": "updated",
+            "data": res.data
+        }
 
     except HTTPException:
         raise
+
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
