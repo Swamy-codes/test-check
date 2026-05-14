@@ -157,7 +157,7 @@ from fastapi import FastAPI, Form, File, UploadFile, HTTPException
 from typing import List, Optional
 import cloudinary.uploader
 
-app = FastAPI()
+# app = FastAPI()
 
 @app.post("/gold")
 async def create_gold_item(
