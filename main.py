@@ -153,27 +153,36 @@ def delete_project(project_id: str):
         raise
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
+from fastapi import FastAPI, Form, File, UploadFile, HTTPException
+from typing import List, Optional
+import cloudinary.uploader
+
+app = FastAPI()
+
 @app.post("/gold")
 async def create_gold_item(
-    name: str = Form(...),
-    type: str = Form(...),
-    goldtype: str = Form(...),
-    purity: str = Form(...),
-    weight_gm: float = Form(...),
-    gender: str = Form(...),
-    description: str = Form(...),
-    height: str = Form(...),  # new field
-    width: str = Form(...),   # new field
-    images: List[UploadFile] = File(...)  # multiple files
+    name: Optional[str] = Form(None),
+    type: Optional[str] = Form(None),
+    goldtype: Optional[str] = Form(None),
+    purity: Optional[str] = Form(None),
+    weight_gm: Optional[float] = Form(None),
+    gender: Optional[str] = Form(None),
+    description: Optional[str] = Form(None),
+    height: Optional[str] = Form(None),
+    width: Optional[str] = Form(None),
+    images: Optional[List[UploadFile]] = File(None)
 ):
     try:
         image_urls = []
-        for image in images:
-            upload_result = cloudinary.uploader.upload(
-                image.file,
-                folder="gold_collection"
-            )
-            image_urls.append(upload_result["secure_url"])
+
+        # Upload images only if provided
+        if images:
+            for image in images:
+                upload_result = cloudinary.uploader.upload(
+                    image.file,
+                    folder="gold_collection"
+                )
+                image_urls.append(upload_result["secure_url"])
 
         data = {
             "name": name,
@@ -183,10 +192,13 @@ async def create_gold_item(
             "weight_gm": weight_gm,
             "gender": gender,
             "description": description,
-            "height": height,    # store new field
-            "width": width,      # store new field
+            "height": height,
+            "width": width,
             "image_urls": image_urls
         }
+
+        # Remove None values (optional)
+        data = {k: v for k, v in data.items() if v is not None}
 
         res = supabase.table("gold_collection").insert(data).execute()
 
