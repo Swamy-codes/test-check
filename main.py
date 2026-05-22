@@ -243,6 +243,27 @@ def delete_gold_item(gold_id: int):
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
 
+@app.get("/gold/{gold_id}")
+def get_gold_item(gold_id: int):
+    try:
+        res = (
+            supabase
+            .table("gold_collection")
+            .select("*")
+            .eq("id", gold_id)
+            .single()
+            .execute()
+        )
+
+        if not res.data:
+            raise HTTPException(status_code=404, detail="Gold item not found")
+
+        return res.data
+
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
+
+
 @app.put("/gold/{gold_id}")
 async def update_gold_item(
     gold_id: int,
@@ -253,43 +274,106 @@ async def update_gold_item(
     weight_gm: Optional[float] = Form(None),
     gender: Optional[str] = Form(None),
     description: Optional[str] = Form(None),
-    height: Optional[str] = Form(None),  # new optional field
-    width: Optional[str] = Form(None),   # new optional field
-    images: Optional[List[UploadFile]] = File(None)  # optional images
+    height: Optional[str] = Form(None),
+    width: Optional[str] = Form(None),
+    images: Optional[List[UploadFile]] = File(None)
 ):
     try:
+
+        # GET EXISTING ITEM
+        existing = (
+            supabase
+            .table("gold_collection")
+            .select("*")
+            .eq("id", gold_id)
+            .single()
+            .execute()
+        )
+
+        existing_data = existing.data
+
+        if not existing_data:
+            raise HTTPException(
+                status_code=404,
+                detail="Gold item not found"
+            )
+
         update_data = {}
 
-        if name:
+        # UPDATE TEXT FIELDS
+        if name is not None:
             update_data["name"] = name
-        if type:
+
+        if type is not None:
             update_data["type"] = type
-        if goldtype:
+
+        if goldtype is not None:
             update_data["goldtype"] = goldtype
-        if purity:
+
+        if purity is not None:
             update_data["purity"] = purity
+
         if weight_gm is not None:
             update_data["weight_gm"] = weight_gm
-        if gender:
+
+        if gender is not None:
             update_data["gender"] = gender
-        if description:
+
+        if description is not None:
             update_data["description"] = description
-        if height:
+
+        if height is not None:
             update_data["height"] = height
-        if width:
+
+        if width is not None:
             update_data["width"] = width
 
-        if images:
+        # KEEP OLD IMAGES IF NO NEW IMAGES
+        if images and len(images) > 0:
+
+            # OPTIONAL:
+            # DELETE OLD CLOUDINARY IMAGES
+            old_images = existing_data.get("image_urls", [])
+
+            for url in old_images:
+                try:
+                    public_id = url.split("/upload/")[1].rsplit(".", 1)[0]
+                    cloudinary.uploader.destroy(public_id)
+                except:
+                    pass
+
+            # UPLOAD NEW IMAGES
             image_urls = []
+
             for image in images:
+                image.file.seek(0)
+
                 upload_result = cloudinary.uploader.upload(
                     image.file,
                     folder="gold_collection"
                 )
-                image_urls.append(upload_result["secure_url"])
+
+                image_urls.append(
+                    upload_result["secure_url"]
+                )
+
             update_data["image_urls"] = image_urls
 
-        res = supabase.table("gold_collection").update(update_data).eq("id", gold_id).execute()
+        else:
+            # KEEP EXISTING IMAGES
+            update_data["image_urls"] = existing_data.get(
+                "image_urls",
+                []
+            )
+
+        # UPDATE DATABASE
+        res = (
+            supabase
+            .table("gold_collection")
+            .update(update_data)
+            .eq("id", gold_id)
+            .execute()
+        )
 
         return {
             "status": "updated",
@@ -297,7 +381,10 @@ async def update_gold_item(
         }
 
     except Exception as e:
-        raise HTTPException(status_code=500, detail=str(e))
+        raise HTTPException(
+            status_code=500,
+            detail=str(e)
+        )
 # --------------------------------------------------
 # CREATE: Add Poster
 # --------------------------------------------------
