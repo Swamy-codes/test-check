@@ -162,6 +162,7 @@ import cloudinary.uploader
 @app.post("/gold")
 async def create_gold_item(
     name: Optional[str] = Form(None),
+    model_no: Optional[str] = Form(None),
     type: Optional[str] = Form(None),
     goldtype: Optional[str] = Form(None),
     purity: Optional[str] = Form(None),
@@ -186,6 +187,7 @@ async def create_gold_item(
 
         data = {
             "name": name,
+            "model_no": model_no,
             "type": type,
             "goldtype": goldtype,
             "purity": purity,
@@ -268,6 +270,7 @@ def get_gold_item(gold_id: int):
 async def update_gold_item(
     gold_id: int,
     name: Optional[str] = Form(None),
+    model_no: Optional[str] = Form(None),
     type: Optional[str] = Form(None),
     goldtype: Optional[str] = Form(None),
     purity: Optional[str] = Form(None),
@@ -309,6 +312,9 @@ async def update_gold_item(
 
         if goldtype is not None:
             update_data["goldtype"] = goldtype
+
+        if model_no is not None:
+            update_data["model_no"] = model_no
 
         if purity is not None:
             update_data["purity"] = purity
