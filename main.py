@@ -601,3 +601,43 @@ async def update_poster(
 
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
+@app.get("/types_collection")
+def get_types_collection():
+    try:
+        # Fetch latest records first
+        res = (
+            supabase
+            .table("gold_collection")
+            .select("type,image_urls,created_at")
+            .order("created_at", desc=True)
+            .execute()
+        )
+
+        if not res.data:
+            return {"count": 0, "data": []}
+
+        seen = set()
+        result = []
+
+        for item in res.data:
+            item_type = item.get("type")
+
+            if not item_type or item_type in seen:
+                continue
+
+            seen.add(item_type)
+
+            image_urls = item.get("image_urls") or []
+
+            result.append({
+                "type": item_type,
+                "image_url": image_urls[0] if image_urls else None
+            })
+
+        return {
+            "count": len(result),
+            "data": result
+        }
+
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
