@@ -608,7 +608,7 @@ def get_types_collection():
         res = (
             supabase
             .table("gold_collection")
-            .select("type,image_urls,created_at")
+            .select("goldtype,image_urls,created_at")
             .order("created_at", desc=True)
             .execute()
         )
@@ -620,7 +620,7 @@ def get_types_collection():
         result = []
 
         for item in res.data:
-            item_type = item.get("type")
+            item_type = item.get("goldtype")
 
             if not item_type or item_type in seen:
                 continue
@@ -630,7 +630,7 @@ def get_types_collection():
             image_urls = item.get("image_urls") or []
 
             result.append({
-                "type": item_type,
+                "goldtype": item_type,
                 "image_url": image_urls[0] if image_urls else None
             })
 
