@@ -215,19 +215,55 @@ async def create_gold_item(
 # GET: All Gold Items
 # --------------------------------------------------
 @app.get("/gold")
-def get_all_gold_items():
+def get_gold_items(
+    page: int = Query(1, ge=1),
+    limit: int = Query(12, ge=1),
+    goldtype: str | None = None,
+    type: str | None = None,
+    gender: str | None = None,
+    purity: str | None = None,
+    search: str | None = None,
+):
     try:
-        res = (
+        query = (
             supabase
             .table("gold_collection")
-            .select("*")
+            .select("*", count="exact")
+        )
+
+        if goldtype:
+            query = query.eq("goldtype", goldtype)
+
+        if type:
+            query = query.eq("type", type)
+
+        if gender:
+            query = query.eq("gender", gender)
+
+        if purity:
+            query = query.eq("purity", purity)
+
+        if search:
+            query = query.or_(
+                f"name.ilike.%{search}%,model_no.ilike.%{search}%"
+            )
+
+        start = (page - 1) * limit
+        end = start + limit - 1
+
+        response = (
+            query
             .order("created_at", desc=True)
+            .range(start, end)
             .execute()
         )
 
         return {
-            "count": len(res.data),
-            "data": res.data
+            "page": page,
+            "limit": limit,
+            "total": response.count,
+            "total_pages": (response.count + limit - 1) // limit if response.count else 0,
+            "data": response.data
         }
 
     except Exception as e:
