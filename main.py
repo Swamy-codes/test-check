@@ -641,3 +641,27 @@ def get_types_collection():
 
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
+@app.get("/onlytypes_collection")
+def get_onlytypes_collection():
+    try:
+        res = (
+            supabase
+            .table("gold_collection")
+            .select("type")
+            .execute()
+        )
+
+        if not res.data:
+            return {"types": []}
+
+        # Remove duplicates and None values
+        types = sorted({
+            item["type"]
+            for item in res.data
+            if item.get("type")
+        })
+
+        return {"types": types}
+
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
