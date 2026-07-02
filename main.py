@@ -1,7 +1,7 @@
 import os
 from typing import List
 
-from fastapi import FastAPI, UploadFile, File, Form, HTTPException
+from fastapi import FastAPI, UploadFile, File, Form, HTTPException,Query
 from fastapi.middleware.cors import CORSMiddleware
 from supabase import create_client, Client
 import cloudinary
